@@ -98,8 +98,9 @@ def particle_sensor_loop():
     previous_pm25 = None
     while not exit_flag:
         current_datetime = datetime.now().astimezone()
-        pm25 = pm1006k.get_pm25()
-        logger.debug(f"pm25 value: {pm25}")
+        raw, pm25 = pm1006k.get_pm25()
+        logger.debug(f"raw value: {raw}")
+        # logger.debug(f"D3 = {raw[5]}, D4 = {raw[6]}")
         if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006k",

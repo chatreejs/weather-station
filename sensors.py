@@ -20,7 +20,7 @@ class PM1006K:
     """
     LED Particle Sensor with Dust Correction PM1006K
 
-    Datasheet: https://en.gassensor.com.cn/Product_files/Specifications/LED%20Particle%20Sensor%20PM1006K%20Specification.pdf
+    Datasheet: https://cdn-learn.adafruit.com/assets/assets/000/122/217/original/PM1006_LED_PARTICLE_SENSOR_MODULE_SPECIFICATIONS-1.pdf?1688148991
     """
     def __init__(self):
         self.__serial_device = serial.Serial(
@@ -32,8 +32,7 @@ class PM1006K:
 
     def get_pm25(self):
         byte_data = self.__serial_device.read(20)
-        value = (byte_data[5] << 8) | byte_data[6]
-        self.__serial_device.flushOutput()
-        return value
+        value = (byte_data[5] * 256) + byte_data[6]
+        return byte_data, value
 
 
