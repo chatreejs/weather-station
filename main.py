@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from models import SensorUpdate
 from kafka import KafkaProducer
-from sensors import BME280, PM1006K
+from sensors import BME280, PM1006
 
 
 exit_flag = False
@@ -93,17 +93,16 @@ def weather_sensor_loop():
 
 
 def particle_sensor_loop():
-    pm1006k = PM1006K()
+    pm1006 = PM1006()
 
     previous_pm25 = None
     while not exit_flag:
         current_datetime = datetime.now().astimezone()
-        raw, pm25 = pm1006k.get_pm25()
-        logger.debug(f"raw value: {raw}")
-        # logger.debug(f"D3 = {raw[5]}, D4 = {raw[6]}")
+        sensor_msg, pm25 = pm1006.get_pm25()
+        logger.debug(f"sensor_msg: {sensor_msg}")
         if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
             sensor_data = SensorUpdate(
-                source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006k",
+                source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
                 type="pm25",
                 value=pm25,
                 time_of_event=current_datetime.isoformat()
@@ -113,7 +112,7 @@ def particle_sensor_loop():
             previous_pm25 = pm25
 
         # fixed delay to UART buffer
-        time.sleep(1)
+        time.sleep(5)
 
 
 if __name__ == "__main__":

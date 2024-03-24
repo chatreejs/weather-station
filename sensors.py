@@ -16,9 +16,9 @@ class BME280:
         return round(random.uniform(1.0, 5.0), 4)
 
 
-class PM1006K:
+class PM1006:
     """
-    LED Particle Sensor with Dust Correction PM1006K
+    LED Particle Sensor with Dust Correction PM1006
 
     Datasheet: https://cdn-learn.adafruit.com/assets/assets/000/122/217/original/PM1006_LED_PARTICLE_SENSOR_MODULE_SPECIFICATIONS-1.pdf?1688148991
     """
@@ -31,8 +31,21 @@ class PM1006K:
         )
 
     def get_pm25(self):
-        byte_data = self.__serial_device.read(20)
-        value = (byte_data[5] * 256) + byte_data[6]
-        return byte_data, value
+        sensor_msg = self.__serial_device.read(20)
+        if not self.check_valid_msg(sensor_msg):
+            return None
+        value = (sensor_msg[5] * 256) + sensor_msg[6]
+        return sensor_msg, value
+    
+    def check_valid_msg(self, sensor_msg):
+        first_byte = sensor_msg[0]
+        second_byte = sensor_msg[1]
+        third_byte = sensor_msg[2]
+
+        if first_byte == 0x16 and second_byte == 0x11 and third_byte == 0x0b:
+            return True
+        else:
+            return False
+
 
 
