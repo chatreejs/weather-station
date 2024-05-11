@@ -88,7 +88,7 @@ def weather_sensor_loop():
             send_message(message, "SensorUpdate")
             previous_pressure = pressure
 
-        time.sleep(5)
+        time.sleep(10)
     pass
 
 
@@ -98,6 +98,7 @@ def particle_sensor_loop():
     previous_pm25 = None
     while not exit_flag:
         current_datetime = datetime.now().astimezone()
+        pm1006.open_connection()
         sensor_msg, pm25 = pm1006.get_pm25()
         logger.debug(f"sensor_msg: {sensor_msg}")
         if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
@@ -111,8 +112,10 @@ def particle_sensor_loop():
             send_message(message, "SensorUpdate")
             previous_pm25 = pm25
 
+        pm1006.close_connection()
+
         # fixed delay to UART buffer
-        time.sleep(5)
+        time.sleep(10)
 
 
 if __name__ == "__main__":
