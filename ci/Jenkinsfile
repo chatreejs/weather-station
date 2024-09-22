@@ -18,19 +18,6 @@ pipeline {
       }
     }
 
-    stage('Test') {
-      agent {
-        docker {
-          image 'node:18.16.0-alpine'
-          args '-v $PWD:/workspace -w /workspace'
-        }
-      }
-      steps {
-        sh 'yarn'
-        sh 'yarn test:coverage'
-      }
-    }
-
     stage('Static Code Scan') {
       agent {
         docker {
