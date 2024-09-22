@@ -1,17 +1,17 @@
-import os
 import json
-import time
-import threading
+import os
 import signal
 import sys
+import threading
+import time
+from datetime import datetime
 
 from autopylogger import init_logging
 from dotenv import load_dotenv
-from datetime import datetime
-from models import SensorUpdate
 from kafka import KafkaProducer
-from sensors import BME280, PM1006
 
+from models import SensorUpdate
+from sensors import BME280, PM1006
 
 exit_flag = False
 
@@ -34,10 +34,10 @@ def get_boolean_from_string(value: str):
 def send_message(message: dict, header_type: str):
     logger.info(f"sending message: {message}")
     producer.send(
-            topic=KAFKA_PRODUCER_TOPIC,
-            key=bytes('data', 'utf-8'),
-            value=message,
-            headers=[("__TypeId__", bytes(header_type, "utf-8"))]
+        topic=KAFKA_PRODUCER_TOPIC,
+        key=bytes("data", "utf-8"),
+        value=message,
+        headers=[("__TypeId__", bytes(header_type, "utf-8"))],
     )
     producer.flush()
 
@@ -55,41 +55,44 @@ def weather_sensor_loop():
         humidity = bme280.get_humidity()
         pressure = bme280.get_pressure()
 
-        if temperature is not None and previous_temperature != temperature and ENABLE_TEMPURATURE:
+        if (
+            temperature is not None
+            and previous_temperature != temperature
+            and ENABLE_TEMPURATURE
+        ):
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
                 type="temperature",
                 value=temperature,
-                time_of_event=current_datetime.isoformat()
+                time_of_event=current_datetime.isoformat(),
             )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
             previous_temperature = temperature
-        
+
         if humidity is not None and previous_humidity != humidity and ENABLE_HUMIDITY:
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
                 type="humidity",
                 value=humidity,
-                time_of_event=current_datetime.isoformat()
+                time_of_event=current_datetime.isoformat(),
             )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
             previous_humidity = humidity
-        
+
         if pressure is not None and previous_pressure != pressure and ENABLE_PRESSURE:
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
                 type="pressure",
                 value=pressure,
-                time_of_event=current_datetime.isoformat()
+                time_of_event=current_datetime.isoformat(),
             )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
             previous_pressure = pressure
 
-        time.sleep(10)
-    pass
+        time.sleep(5)
 
 
 def particle_sensor_loop():
@@ -106,43 +109,42 @@ def particle_sensor_loop():
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
                 type="pm25",
                 value=pm25,
-                time_of_event=current_datetime.isoformat()
+                time_of_event=current_datetime.isoformat(),
             )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
             previous_pm25 = pm25
 
         pm1006.close_connection()
-
-        # fixed delay to UART buffer
-        time.sleep(10)
+        time.sleep(20)
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, exit_handler)
 
     log_format = "%(asctime)s %(levelname)s - [%(filename)s] %(funcName)s: %(message)s"
-    logger = init_logging(log_directory="logs",
-                      log_name="weather-station",
-                      log_format=log_format,
-                      log_level="DEBUG",
-                      rotation_criteria="time",
-                      rotate_when="d",
-                      rotate_interval=1
-        )
+    logger = init_logging(
+        log_directory="logs",
+        log_name="weather-station",
+        log_format=log_format,
+        log_level="DEBUG",
+        rotation_criteria="time",
+        rotate_when="d",
+        rotate_interval=1,
+    )
 
     logger.info("starting weather-station")
     logger.info("loading env file")
     load_dotenv()
 
     try:
-        KAFKA_PRODUCER_BOOTSTRAP_SERVERS=os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS")
-        KAFKA_PRODUCER_TOPIC=os.getenv("KAFKA_PRODUCER_TOPIC")
-        KAFKA_PRODUCER_SOURCE_NAME=os.getenv("KAFKA_PRODUCER_SOURCE_NAME")
-        ENABLE_TEMPURATURE=get_boolean_from_string(os.getenv("ENABLE_TEMPURATURE"))
-        ENABLE_HUMIDITY=get_boolean_from_string(os.getenv("ENABLE_HUMIDITY"))
-        ENABLE_PRESSURE=get_boolean_from_string(os.getenv("ENABLE_PRESSURE"))
-        ENABLE_PM25=get_boolean_from_string(os.getenv("ENABLE_PM25"))
+        KAFKA_PRODUCER_BOOTSTRAP_SERVERS = os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS")
+        KAFKA_PRODUCER_TOPIC = os.getenv("KAFKA_PRODUCER_TOPIC")
+        KAFKA_PRODUCER_SOURCE_NAME = os.getenv("KAFKA_PRODUCER_SOURCE_NAME")
+        ENABLE_TEMPURATURE = get_boolean_from_string(os.getenv("ENABLE_TEMPURATURE"))
+        ENABLE_HUMIDITY = get_boolean_from_string(os.getenv("ENABLE_HUMIDITY"))
+        ENABLE_PRESSURE = get_boolean_from_string(os.getenv("ENABLE_PRESSURE"))
+        ENABLE_PM25 = get_boolean_from_string(os.getenv("ENABLE_PM25"))
     except Exception as e:
         logger.error(f"cannot parse .env: {e}")
         sys.exit(1)
@@ -163,10 +165,10 @@ if __name__ == "__main__":
         logger.info("connecting to kafka")
         producer = KafkaProducer(
             bootstrap_servers=[KAFKA_PRODUCER_BOOTSTRAP_SERVERS],
-            value_serializer=lambda x: json.dumps(x).encode('utf-8')
+            value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
         logger.info("connected to kafka")
-        
+
     except Exception as e:
         logger.error(f"cannot connect to Kafka: {e}")
         sys.exit(1)
