@@ -34,7 +34,7 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh 'docker build --build-arg -f Dockerfile . -t ${IMAGE_URL}:${BUILD_VERSION}'
+        sh 'docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}:${BUILD_VERSION} --load'
       }
     }
 
