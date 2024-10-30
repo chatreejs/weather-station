@@ -34,8 +34,10 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh 'cd app/edge'
-        sh 'docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}:${BUILD_VERSION} --load'
+        sh '''
+          cd app/edge
+          docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}:${BUILD_VERSION} --load
+        '''
       }
     }
 
