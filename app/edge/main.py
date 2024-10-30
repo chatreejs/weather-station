@@ -175,7 +175,7 @@ if __name__ == "__main__":
         ENABLE_PM25 = get_boolean_from_string(os.getenv("ENABLE_PM25"))
     except Exception as e:
         logger.error(f"Cannot parse .env file: {e}")
-        sys.exit(1)
+        raise
 
     config_msg = f"""configuration
         -- metadata --
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Cannot connect to Kafka: {e}")
-        sys.exit(1)
+        raise
 
     try:
         thread_1 = threading.Thread(target=weather_sensor_loop)
@@ -221,4 +221,4 @@ if __name__ == "__main__":
             time.sleep(1)
     except Exception as e:
         logger.error(e)
-        sys.exit(1)
+        raise
