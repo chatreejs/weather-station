@@ -9,7 +9,6 @@ from datetime import datetime
 from autopylogger import init_logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
-
 from models import SensorUpdate
 from sensors import BME280, PM1006
 
@@ -28,7 +27,7 @@ def get_boolean_from_string(value: str):
     if value_capitalize in ["True", "False"]:
         return value_capitalize == "True"
     else:
-        raise Exception(f"invalid value: {value}")
+        raise ValueError(f"invalid value: {value}")
 
 
 def send_message(message: dict, header_type: str):
@@ -58,7 +57,7 @@ def weather_sensor_loop():
         if (
             temperature is not None
             and previous_temperature != temperature
-            and ENABLE_TEMPURATURE
+            and ENABLE_TEMPERATURE
         ):
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
@@ -141,7 +140,7 @@ if __name__ == "__main__":
         KAFKA_PRODUCER_BOOTSTRAP_SERVERS = os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS")
         KAFKA_PRODUCER_TOPIC = os.getenv("KAFKA_PRODUCER_TOPIC")
         KAFKA_PRODUCER_SOURCE_NAME = os.getenv("KAFKA_PRODUCER_SOURCE_NAME")
-        ENABLE_TEMPURATURE = get_boolean_from_string(os.getenv("ENABLE_TEMPURATURE"))
+        ENABLE_TEMPERATURE = get_boolean_from_string(os.getenv("ENABLE_TEMPERATURE"))
         ENABLE_HUMIDITY = get_boolean_from_string(os.getenv("ENABLE_HUMIDITY"))
         ENABLE_PRESSURE = get_boolean_from_string(os.getenv("ENABLE_PRESSURE"))
         ENABLE_PM25 = get_boolean_from_string(os.getenv("ENABLE_PM25"))
@@ -153,7 +152,7 @@ if __name__ == "__main__":
         topic: {KAFKA_PRODUCER_TOPIC}
         source_name: {KAFKA_PRODUCER_SOURCE_NAME}
 
-        enable_tempurature: {ENABLE_TEMPURATURE}
+        enable_temperature: {ENABLE_TEMPERATURE}
         enable_humidity: {ENABLE_HUMIDITY}
         enable_pressure: {ENABLE_PRESSURE}
         enable_pm25: {ENABLE_PM25}
