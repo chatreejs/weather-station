@@ -22,7 +22,7 @@ exit_flag = False
 def exit_handler(sig, frame):
     global exit_flag
     exit_flag = True
-    logger.info("exiting ...")
+    logger.info("Send exit signal to threads")
     sys.exit(0)
 
 
