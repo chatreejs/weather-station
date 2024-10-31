@@ -23,13 +23,13 @@ void setup() {
       ;
   }
   
-  // LoRa.setSignalBandwidth(125E3);
-  // LoRa.setCodingRate4(1);
-  // LoRa.setSpreadingFactor(12);
-  // LoRa.setPreambleLength(8);
-  // LoRa.enableCrc();
-  // LoRa.setTimeout(100);
-  // LoRa.setTxPower(17);
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setCodingRate4(1);
+  LoRa.setSpreadingFactor(12);
+  LoRa.setPreambleLength(8);
+  LoRa.enableCrc();
+  LoRa.setTimeout(100);
+  LoRa.setTxPower(17);
 
   Serial.println("LoRa init succeeded.");
 }
@@ -46,5 +46,5 @@ void loop() {
   
   counter++;
 
-  delay(5000);
+  delay(1000);
 }
