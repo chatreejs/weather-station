@@ -19,15 +19,12 @@ class LoRaReceiver(LoRa):
 
     def on_rx_done(self):
         payload = self.read_payload(nocheck=True)
-        print("Payload", payload)
         self.received_message = "".join(chr(byte) for byte in payload)
-        print("Received message:", self.received_message)
         self.set_mode(MODE.SLEEP)
         self.reset_ptr_rx()
         self.set_mode(MODE.RXCONT)
 
     def start(self):
-        print("Start LoRa RX_COUNT")
         self.set_mode(MODE.RXCONT)
 
     def teardown(self):

@@ -1,8 +1,6 @@
 import json
 import os
 import platform
-import signal
-import sys
 import time
 
 from autopylogger import init_logging
@@ -36,12 +34,61 @@ def send_message(message: dict, header_type: str):
 
 
 def main():
-    logger.info("Listening for LoRa messages...")
+    logger.info("Starting weather sensor loop")
     lora.start()
+
+    previous_temperature = None
+    # previous_humidity = None
+    # previous_pressure = None
+    previous_pm25 = None
+
     while True:
         if lora.received_message:
             logger.info(lora.received_message)
+            message = lora.received_message.split(",")
             lora.received_message = None
+
+            current_datetime = datetime.now().astimezone()
+            probe_id = message[0]
+            pm25 = message[1]
+            temperature = message[2]
+
+            if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
+                sensor_data = SensorUpdate(
+                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
+                    probe_id=probe_id,
+                    type="pm25",
+                    value=pm25,
+                    time_of_event=current_datetime.isoformat(),
+                    device=DEVICE_NAME,
+                    manufacturer=DEVICE_MANUFACTURER,
+                    platform=platform.platform(),
+                    app_version=APP_VERSION,
+                )
+            message = sensor_data.to_dict()
+            send_message(message, "SensorUpdate")
+            previous_pm25 = pm25
+
+            if (
+                temperature is not None
+                and previous_temperature != temperature
+                and ENABLE_TEMPERATURE
+            ):
+                sensor_data = SensorUpdate(
+                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
+                    probe_id=probe_id,
+                    type="temperature",
+                    value=temperature,
+                    time_of_event=current_datetime.isoformat(),
+                    device=DEVICE_NAME,
+                    manufacturer=DEVICE_MANUFACTURER,
+                    platform=platform.platform(),
+                    app_version=APP_VERSION,
+                )
+            message = sensor_data.to_dict()
+            send_message(message, "SensorUpdate")
+            previous_temperature = temperature
+
         time.sleep(1)
 
 
