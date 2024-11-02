@@ -7,7 +7,7 @@
 
 #define PIN_NSS 10
 #define PIN_NRESET 9
-#define PIN_DIO0 8
+#define PIN_DIO0 2
 #define PIN_OLED_RESET 4
 
 #define SCREEN_WIDTH 128
@@ -56,11 +56,11 @@ void setup() {
 
   LoRa.setSignalBandwidth(125E3);
   LoRa.setCodingRate4(1);
-  LoRa.setSpreadingFactor(12);
+  LoRa.setSpreadingFactor(10);
   LoRa.setPreambleLength(8);
   LoRa.enableCrc();
   LoRa.setTimeout(100);
-  LoRa.setTxPower(17);
+  LoRa.setTxPower(15);
 
   Serial.println("Initialize LoRa succeeded");
   display.println("0x00 - SUCCESS");
@@ -72,14 +72,18 @@ void loop() {
   // if (sensorSerial.available()) {
   //   Serial.println("Sensor connected");
   // }
-  float value = random(1, 500) / 100.0;
-  String packet = createPacket("pm25", value);
+  float pm25 = random(1, 3000) / 100.0;
+  float temp = random(1, 3000) / 100.0;
+  String packet = createPacket(pm25, temp);
 
   display.clearDisplay();
   display.setCursor(0, 0);
   display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.print(packet);
+  display.print("pm25: ");
+  display.println(pm25);
+  display.print("temp: ");
+  display.println(temp);
   display.display();
 
   LoRa.beginPacket();
@@ -87,9 +91,11 @@ void loop() {
   LoRa.endPacket();
   Serial.print("Send LoRa packet: ");
   Serial.println(packet);
+
+  delay(5000);
 }
 
-String createPacket(String type, float value) {
-  String packet = PROBE_ID + "," + type + "," + value;
+String createPacket(float pm25, float temp) {
+  String packet = PROBE_ID + "," + pm25 + "," + temp;
   return packet;
 }

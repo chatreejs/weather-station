@@ -7,7 +7,7 @@ int counter = 0;
 // LoRa connect config
 #define NSS_PIN 10
 #define NRESET_PIN 9
-#define DIO0_PIN 8
+#define DIO0_PIN 2
 
 void setup() {
   Serial.begin(9600);
@@ -17,15 +17,15 @@ void setup() {
   Serial.println("LoRa Node - Sender #1");
 
   LoRa.setPins(NSS_PIN, NRESET_PIN, DIO0_PIN);
-  if (!LoRa.begin(433E6)) {
+  if (!LoRa.begin(434E6)) {
     Serial.println("LoRa init failed!");
     while (true)
       ;
   }
   
   LoRa.setSignalBandwidth(125E3);
-  LoRa.setCodingRate4(1);
-  LoRa.setSpreadingFactor(12);
+  LoRa.setCodingRate4(5);
+  LoRa.setSpreadingFactor(7);
   LoRa.setPreambleLength(8);
   LoRa.enableCrc();
   LoRa.setTimeout(100);
