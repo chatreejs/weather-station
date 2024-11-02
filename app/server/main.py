@@ -15,16 +15,6 @@ from lora import LoRaReceiver
 APP_VERSION = "0.1.0"
 MOCK_PROBE_ID = "TH-10-0001"
 
-exit_flag = False
-
-
-def exit_handler(sig, frame):
-    global exit_flag
-    exit_flag = True
-    logger.info("Send exit signal to threads")
-    lora.teardown()
-    sys.exit(0)
-
 
 def get_boolean_from_string(value: str):
     value_capitalize = value.lower().capitalize()
@@ -48,7 +38,7 @@ def send_message(message: dict, header_type: str):
 def main():
     logger.info("Listening for LoRa messages...")
     lora.start()
-    while not exit_flag:
+    while True:
         if lora.received_message:
             logger.info(lora.received_message)
             lora.received_message = None
@@ -85,20 +75,20 @@ if __name__ == "__main__":
         logger.error(f"Cannot parse .env file: {e}")
         raise
 
-    config_msg = f"""configuration
-        -- metadata --
-        device_name: {DEVICE_NAME}
-        device_manufacturer: {DEVICE_MANUFACTURER}
+    config_msg = f"""Application Configuration
+    -- metadata --
+    device_name: {DEVICE_NAME}
+    device_manufacturer: {DEVICE_MANUFACTURER}
 
-        -- kafka producer --
-        topic: {KAFKA_PRODUCER_TOPIC}
-        source_name: {KAFKA_PRODUCER_SOURCE_NAME}
+    -- kafka producer --
+    topic: {KAFKA_PRODUCER_TOPIC}
+    source_name: {KAFKA_PRODUCER_SOURCE_NAME}
         
-        -- sensors --
-        enable_temperature: {ENABLE_TEMPERATURE}
-        enable_humidity: {ENABLE_HUMIDITY}
-        enable_pressure: {ENABLE_PRESSURE}
-        enable_pm25: {ENABLE_PM25}
+    -- sensors --
+    enable_temperature: {ENABLE_TEMPERATURE}
+    enable_humidity: {ENABLE_HUMIDITY}
+    enable_pressure: {ENABLE_PRESSURE}
+    enable_pm25: {ENABLE_PM25}
     """
 
     logger.info(config_msg)
@@ -130,3 +120,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(e)
         raise
+    finally:
+        lora.teardown()

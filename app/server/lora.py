@@ -10,7 +10,6 @@ class LoRaReceiver(LoRa):
         super(LoRaReceiver, self).__init__(verbose)
         self.set_mode(MODE.SLEEP)
         self.set_freq(433)
-        self.set_bw(128)
         self.set_coding_rate(CODING_RATE.CR4_5)
         self.set_spreading_factor(10)
         self.set_preamble(8)
@@ -28,6 +27,7 @@ class LoRaReceiver(LoRa):
         self.set_mode(MODE.RXCONT)
 
     def start(self):
+        print("Start LoRa RX_COUNT")
         self.set_mode(MODE.RXCONT)
 
     def teardown(self):
