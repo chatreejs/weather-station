@@ -18,8 +18,9 @@ class LoRaReceiver(LoRa):
         self.received_message = None
 
     def on_rx_done(self):
+        BOARD.blink(.1, 1)
         payload = self.read_payload(nocheck=True)
-        self.received_message = "".join(chr(byte) for byte in payload)
+        self.received_message = bytes(payload).decode("utf-8", "ignore")
         self.set_mode(MODE.SLEEP)
         self.reset_ptr_rx()
         self.set_mode(MODE.RXCONT)

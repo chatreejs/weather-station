@@ -23,7 +23,7 @@ def get_boolean_from_string(value: str):
 
 
 def send_message(message: dict, header_type: str):
-    logger.info(f"Sending message: {message}")
+    logger.debug(f"Sending message: {message}")
     producer.send(
         topic=KAFKA_PRODUCER_TOPIC,
         key=bytes("data", "utf-8"),
@@ -44,7 +44,7 @@ def main():
 
     while True:
         if lora.received_message:
-            logger.info(lora.received_message)
+            logger.info(f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm")
             message = lora.received_message.split(",")
             lora.received_message = None
 
@@ -122,40 +122,37 @@ if __name__ == "__main__":
         logger.error(f"Cannot parse .env file: {e}")
         raise
 
-    config_msg = f"""Application Configuration
-    -- metadata --
-    device_name: {DEVICE_NAME}
-    device_manufacturer: {DEVICE_MANUFACTURER}
-
-    -- kafka producer --
-    topic: {KAFKA_PRODUCER_TOPIC}
-    source_name: {KAFKA_PRODUCER_SOURCE_NAME}
-        
-    -- sensors --
-    enable_temperature: {ENABLE_TEMPERATURE}
-    enable_humidity: {ENABLE_HUMIDITY}
-    enable_pressure: {ENABLE_PRESSURE}
-    enable_pm25: {ENABLE_PM25}
-    """
+    config_msg = "Application Configuration:\n"
+    config_msg += " device_name         %s\n" % DEVICE_NAME
+    config_msg += " device_manufacturer %s\n" % DEVICE_MANUFACTURER
+    config_msg += " device_platform     %s\n" % platform.platform()
+    config_msg += " topic               %s\n" % KAFKA_PRODUCER_TOPIC
+    config_msg += " source_name         %s\n" % KAFKA_PRODUCER_SOURCE_NAME
+    config_msg += " enabled_temperature %s\n" % ENABLE_TEMPERATURE
+    config_msg += " enabled_humidity    %s\n" % ENABLE_HUMIDITY
+    config_msg += " enabled_pressure    %s\n" % ENABLE_PRESSURE
+    config_msg += " enabled_pm25:       %s\n" % ENABLE_PM25
 
     logger.info(config_msg)
 
     try:
-        logger.info("Initializing lora")
-        lora = LoRaReceiver(verbose=True)
+        logger.info("Initializing LoRa Gateway")
+        lora = LoRaReceiver(verbose=False)
         lora.set_pa_config(pa_select=1)
+        if lora.get_mode() != 0x80 and lora.get_mode() != 0x81:
+            raise Exception("LoRa is not in SLEEP or STDBY mode. Check wiring")
         logger.info(lora)
     except Exception as e:
         logger.error(f"Cannot initialize LoRa: {e}")
         raise
 
     try:
-        logger.info("Connecting to kafka")
+        logger.info("Connecting to Kafka")
         producer = KafkaProducer(
             bootstrap_servers=[KAFKA_PRODUCER_BOOTSTRAP_SERVERS],
             value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
-        logger.info("Connected to kafka")
+        logger.info("Connected to Kafka")
 
     except Exception as e:
         logger.error(f"Cannot connect to Kafka: {e}")
