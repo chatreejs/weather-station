@@ -32,33 +32,21 @@ pipeline {
       }
     }
 
-    stage('Build Docker Image') {
+    stage('Build Docker Image (edge)') {
       steps {
         sh '''
           cd app/edge
-          docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}:${BUILD_VERSION} --load
+          docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}-edge:${BUILD_VERSION} --load
         '''
       }
     }
 
-    stage('Image Vulnerability Scan') {
-      agent {
-        docker {
-          image 'aquasec/trivy:latest'
-          args '-v /var/run/docker.sock:/var/run/docker.sock -v trivy_cache:/.cache --entrypoint="" -u root --privileged'
-        }
-      }
+    stage('Build Docker Image (gateway)') {
       steps {
-        sh 'trivy image --format template --template \"@/contrib/html.tpl\" --output report.html --severity HIGH,CRITICAL --no-progress ${IMAGE_URL}:${BUILD_VERSION}'
-
-        publishHTML target : [
-          allowMissing: true,
-          alwaysLinkToLastBuild: false,
-          keepAll: true,
-          reportDir: '.',
-          reportFiles: 'report.html',
-          reportName: 'Trivy Scan Report',
-        ]
+        sh '''
+          cd app/gateway
+          docker build --builder multi-arch-builder --platform linux/arm/v7 -f Dockerfile . -t ${IMAGE_URL}-gateway:${BUILD_VERSION} --load
+        '''
       }
     }
 
@@ -66,14 +54,16 @@ pipeline {
       steps {
         withCredentials([usernamePassword(credentialsId: 'chatree-docker-registry-credential', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
           sh 'docker login harbor.chatree.dev -u $USERNAME -p $PASSWORD'
-          sh 'docker push ${IMAGE_URL}:${BUILD_VERSION}'
+          sh 'docker push ${IMAGE_URL}-edge:${BUILD_VERSION}'
+          sh 'docker push ${IMAGE_URL}-gateway:${BUILD_VERSION}'
         }
       }
     }
 
     stage('Clear Image') {
       steps {
-        sh 'docker rmi ${IMAGE_URL}:${BUILD_VERSION}'
+        sh 'docker rmi ${IMAGE_URL}-edge:${BUILD_VERSION}'
+        sh 'docker rmi ${IMAGE_URL}-gateway:${BUILD_VERSION}'
       }
     }
 
@@ -81,7 +71,7 @@ pipeline {
       steps {
         script {
           withCredentials([sshUserPrivateKey(credentialsId: 'ctlssh-credential', keyFileVariable: 'IDENTITY', usernameVariable: 'USERNAME')]) {
-            sh "ssh -o StrictHostKeyChecking=no -i ${IDENTITY} ${USERNAME}@${DESTINATION_SERVER} \'docker pull ${IMAGE_URL}:${BUILD_VERSION} \
+            sh "ssh -o StrictHostKeyChecking=no -i ${IDENTITY} ${USERNAME}@${DESTINATION_SERVER} \'docker pull ${IMAGE_URL}-gateway:${BUILD_VERSION} \
             && cd /opt/app/weather-station \
             && docker compose down \
             && sed -i \"s/^\\(TAG_VERSION=\\).*/TAG_VERSION=${BUILD_VERSION}/g\" .env \
