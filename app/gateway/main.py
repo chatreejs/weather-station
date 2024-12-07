@@ -2,13 +2,13 @@ import json
 import os
 import platform
 import time
+from datetime import datetime
 
 from autopylogger import init_logging
-from datetime import datetime
 from dotenv import load_dotenv
 from kafka import KafkaProducer
-from models import SensorUpdate
 from lora import LoRaReceiver
+from models import SensorUpdate
 
 APP_VERSION = "0.1.0"
 MOCK_PROBE_ID = "TH-10-0001"
@@ -44,7 +44,9 @@ def main():
 
     while True:
         if lora.received_message:
-            logger.info(f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm")
+            logger.info(
+                f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm"
+            )
             message = lora.received_message.split(",")
             lora.received_message = None
 
