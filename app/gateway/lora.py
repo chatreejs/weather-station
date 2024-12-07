@@ -13,6 +13,7 @@ class LoRaReceiver(LoRa):
         self.set_coding_rate(CODING_RATE.CR4_5)
         self.set_spreading_factor(10)
         self.set_preamble(8)
+        self.set_pa_config(pa_select=1)
         self.set_rx_crc(True)
         self.set_dio_mapping([0, 0, 0, 0, 0, 0])
         self.received_message = None

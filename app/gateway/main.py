@@ -138,7 +138,6 @@ if __name__ == "__main__":
     try:
         logger.info("Initializing LoRa Gateway")
         lora = LoRaReceiver(verbose=False)
-        lora.set_pa_config(pa_select=1)
         if lora.get_mode() != 0x80 and lora.get_mode() != 0x81:
             raise Exception("LoRa is not in SLEEP or STDBY mode. Check wiring")
         logger.info(lora)
