@@ -1,6 +1,7 @@
 import json
 import os
 import platform
+import re
 import time
 from datetime import datetime
 
@@ -11,7 +12,6 @@ from lora import LoRaReceiver
 from models import SensorUpdate
 
 APP_VERSION = "0.1.0"
-MOCK_PROBE_ID = "TH-10-0001"
 
 
 def get_boolean_from_string(value: str):
@@ -33,12 +33,30 @@ def send_message(message: dict, header_type: str):
     producer.flush()
 
 
+def validate_lora_message(message: str):
+    if message is None:
+        return False
+    message = message.split(",")
+    if len(message) != 4:
+        return False
+    try:
+        float(message[1])
+        float(message[2])
+        float(message[3])
+    except ValueError:
+        return False
+
+    if re.match(r"^[A-Z]{2}-[0-9]{2}-[0-9]{4}$", message[0]) is None:
+        return False
+    return True
+
+
 def main():
     logger.info("Starting weather sensor loop")
     lora.start()
 
     previous_temperature = None
-    # previous_humidity = None
+    previous_humidity = None
     # previous_pressure = None
     previous_pm25 = None
 
@@ -47,6 +65,10 @@ def main():
             logger.info(
                 f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm"
             )
+            if validate_lora_message(lora.received_message) is False:
+                logger.error("Invalid message format")
+                lora.received_message = None
+                continue
             message = lora.received_message.split(",")
             lora.received_message = None
 
@@ -54,6 +76,7 @@ def main():
             probe_id = message[0]
             pm25 = message[1]
             temperature = message[2]
+            humidity = message[3]
 
             if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
                 sensor_data = SensorUpdate(
@@ -90,6 +113,26 @@ def main():
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
             previous_temperature = temperature
+
+            if (
+                humidity is not None
+                and previous_humidity != humidity
+                and ENABLE_HUMIDITY
+            ):
+                sensor_data = SensorUpdate(
+                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
+                    probe_id=probe_id,
+                    type="humidity",
+                    value=humidity,
+                    time_of_event=current_datetime.isoformat(),
+                    device=DEVICE_NAME,
+                    manufacturer=DEVICE_MANUFACTURER,
+                    platform=platform.platform(),
+                    app_version=APP_VERSION,
+                )
+            message = sensor_data.to_dict()
+            send_message(message, "SensorUpdate")
+            previous_humidity = humidity
 
         time.sleep(1)
 
