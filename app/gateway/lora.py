@@ -1,5 +1,5 @@
-from SX127x.LoRa import *
 from SX127x.board_config import BOARD
+from SX127x.LoRa import *
 
 BOARD.setup()
 BOARD.reset()
@@ -19,7 +19,7 @@ class LoRaReceiver(LoRa):
         self.received_message = None
 
     def on_rx_done(self):
-        BOARD.blink(.1, 1)
+        BOARD.blink(0.1, 1)
         payload = self.read_payload(nocheck=True)
         self.received_message = bytes(payload).decode("utf-8", "ignore")
         self.set_mode(MODE.SLEEP)
