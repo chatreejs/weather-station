@@ -88,9 +88,9 @@ def main():
                     platform=platform.platform(),
                     app_version=APP_VERSION,
                 )
-            message = sensor_data.to_dict()
-            send_message(message, "SensorUpdate")
-            previous_pm25 = value
+                message = sensor_data.to_dict()
+                send_message(message, "SensorUpdate")
+                previous_pm25 = value
 
             if (
                 sensor_type == "TEMP"
@@ -108,9 +108,9 @@ def main():
                     platform=platform.platform(),
                     app_version=APP_VERSION,
                 )
-            message = sensor_data.to_dict()
-            send_message(message, "SensorUpdate")
-            previous_temperature = value
+                message = sensor_data.to_dict()
+                send_message(message, "SensorUpdate")
+                previous_temperature = value
 
             if sensor_type == "HUMI" and previous_humidity != value and ENABLE_HUMIDITY:
                 sensor_data = SensorUpdate(
@@ -124,9 +124,9 @@ def main():
                     platform=platform.platform(),
                     app_version=APP_VERSION,
                 )
-            message = sensor_data.to_dict()
-            send_message(message, "SensorUpdate")
-            previous_humidity = value
+                message = sensor_data.to_dict()
+                send_message(message, "SensorUpdate")
+                previous_humidity = value
 
         time.sleep(1)
 
