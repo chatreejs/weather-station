@@ -35,20 +35,18 @@ def send_message(message: dict, header_type: str):
 
 def validate_lora_message(message: str):
     if message is None:
-        return False
+        return False, "Message is None"
     message = message.split("|")
-    if len(message) != 4:
-        return False
+    if len(message) != 3:
+        return False, "Message does not have 3 parts"
     try:
-        float(message[1])
         float(message[2])
-        float(message[3])
     except ValueError:
-        return False
+        return False, "Cannot parse value as float"
 
     if re.match(r"^[A-Z]{2}-[0-9]{2}-[0-9]{4}$", message[0]) is None:
-        return False
-    return True
+        return False, "Invalid probe ID format"
+    return True, None
 
 
 def main():
@@ -65,25 +63,25 @@ def main():
             logger.info(
                 f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm"
             )
-            if validate_lora_message(lora.received_message) is False:
-                logger.error("Invalid message format")
+            is_valid, error = validate_lora_message(lora.received_message)
+            if is_valid is False:
+                logger.error("Invalid message format: %s", error)
                 lora.received_message = None
                 continue
-            message = lora.received_message.split(",")
+            message = lora.received_message.split("|")
             lora.received_message = None
 
             current_datetime = datetime.now().astimezone()
             probe_id = message[0]
-            pm25 = message[1]
-            temperature = message[2]
-            humidity = message[3]
+            sensor_type = message[1]
+            value = float(message[2])
 
-            if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
+            if sensor_type == "PM25" and previous_pm25 != value and ENABLE_PM25:
                 sensor_data = SensorUpdate(
                     source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
                     probe_id=probe_id,
                     type="pm25",
-                    value=pm25,
+                    value=value,
                     time_of_event=current_datetime.isoformat(),
                     device=DEVICE_NAME,
                     manufacturer=DEVICE_MANUFACTURER,
@@ -92,18 +90,18 @@ def main():
                 )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
-            previous_pm25 = pm25
+            previous_pm25 = value
 
             if (
-                temperature is not None
-                and previous_temperature != temperature
+                sensor_type == "TEMP"
+                and previous_temperature != value
                 and ENABLE_TEMPERATURE
             ):
                 sensor_data = SensorUpdate(
                     source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
                     probe_id=probe_id,
                     type="temperature",
-                    value=temperature,
+                    value=value,
                     time_of_event=current_datetime.isoformat(),
                     device=DEVICE_NAME,
                     manufacturer=DEVICE_MANUFACTURER,
@@ -112,18 +110,14 @@ def main():
                 )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
-            previous_temperature = temperature
+            previous_temperature = value
 
-            if (
-                humidity is not None
-                and previous_humidity != humidity
-                and ENABLE_HUMIDITY
-            ):
+            if sensor_type == "HUMI" and previous_humidity != value and ENABLE_HUMIDITY:
                 sensor_data = SensorUpdate(
                     source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
                     probe_id=probe_id,
                     type="humidity",
-                    value=humidity,
+                    value=value,
                     time_of_event=current_datetime.isoformat(),
                     device=DEVICE_NAME,
                     manufacturer=DEVICE_MANUFACTURER,
@@ -132,7 +126,7 @@ def main():
                 )
             message = sensor_data.to_dict()
             send_message(message, "SensorUpdate")
-            previous_humidity = humidity
+            previous_humidity = value
 
         time.sleep(1)
 
