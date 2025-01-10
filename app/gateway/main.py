@@ -36,7 +36,7 @@ def send_message(message: dict, header_type: str):
 def validate_lora_message(message: str):
     if message is None:
         return False
-    message = message.split(",")
+    message = message.split("|")
     if len(message) != 4:
         return False
     try:
