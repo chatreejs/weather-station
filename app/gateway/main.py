@@ -158,7 +158,7 @@ def main():
 
 
 if __name__ == "__main__":
-    log_format = "%(asctime)s %(levelname)s - [%(filename)s] %(funcName)s: %(message)s"
+    log_format = "%(asctime)s %(levelname)s  [%(filename)s] %(funcName)s: %(message)s"
     logger = init_logging(
         log_directory="logs",
         log_name="weather-station",
