@@ -9,7 +9,8 @@ from autopylogger import init_logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
 from lora import LoRaReceiver
-from models import SensorUpdate
+from models import SensorUpdate, Heartbeat
+from sensor_type import SensorType
 
 APP_VERSION = "0.1.0"
 
@@ -76,9 +77,28 @@ def main():
             sensor_type = message[1]
             value = float(message[2])
 
-            if sensor_type == "PM25" and previous_pm25 != value and ENABLE_PM25:
+            if sensor_type == SensorType.HEARTBEAT:
+                source = KAFKA_PRODUCER_SOURCE_NAME + "." + probe_id.lower() + ".sx1278"
+                sensor_data = Heartbeat(
+                    source=source,
+                    probe_id=probe_id,
+                    time_of_event=current_datetime.isoformat(),
+                    device=DEVICE_NAME,
+                    manufacturer=DEVICE_MANUFACTURER,
+                    platform=platform.platform(),
+                    app_version=APP_VERSION,
+                )
+                message = sensor_data.to_dict()
+                send_message(message, "Heartbeat")
+
+            if (
+                sensor_type == SensorType.PM25
+                and previous_pm25 != value
+                and ENABLE_PM25
+            ):
+                source = KAFKA_PRODUCER_SOURCE_NAME + "." + probe_id.lower() + ".pm1006"
                 sensor_data = SensorUpdate(
-                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
+                    source=source,
                     probe_id=probe_id,
                     type="pm25",
                     value=value,
@@ -93,12 +113,13 @@ def main():
                 previous_pm25 = value
 
             if (
-                sensor_type == "TEMP"
+                sensor_type == SensorType.TEMP
                 and previous_temperature != value
                 and ENABLE_TEMPERATURE
             ):
+                source = KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280"
                 sensor_data = SensorUpdate(
-                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
+                    source=source,
                     probe_id=probe_id,
                     type="temperature",
                     value=value,
@@ -112,9 +133,14 @@ def main():
                 send_message(message, "SensorUpdate")
                 previous_temperature = value
 
-            if sensor_type == "HUMI" and previous_humidity != value and ENABLE_HUMIDITY:
+            if (
+                sensor_type == SensorType.HUMI
+                and previous_humidity != value
+                and ENABLE_HUMIDITY
+            ):
+                source = KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280"
                 sensor_data = SensorUpdate(
-                    source=KAFKA_PRODUCER_SOURCE_NAME + "." + "bme280",
+                    source=source,
                     probe_id=probe_id,
                     type="humidity",
                     value=value,

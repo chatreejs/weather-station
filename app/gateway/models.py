@@ -15,3 +15,15 @@ class SensorUpdate:
     manufacturer: str
     platform: str
     app_version: str
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass
+class Heartbeat:
+    source: str
+    probe_id: str
+    time_of_event: str
+    device: str
+    manufacturer: str
+    platform: str
+    app_version: str
