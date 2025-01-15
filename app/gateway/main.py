@@ -9,7 +9,7 @@ from autopylogger import init_logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
 from lora import LoRaReceiver
-from models import SensorUpdate, Heartbeat
+from models import Heartbeat, SensorUpdate
 from sensor_type import SensorType
 
 APP_VERSION = "0.1.0"
@@ -96,6 +96,12 @@ def main():
                 and previous_pm25 != value
                 and ENABLE_PM25
             ):
+                # Fix zero value
+                if value == 0:
+                    value = 1
+                if previous_pm25 == value:
+                    continue
+
                 source = KAFKA_PRODUCER_SOURCE_NAME + "." + probe_id.lower() + ".pm1006"
                 sensor_data = SensorUpdate(
                     source=source,
