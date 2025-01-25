@@ -203,22 +203,18 @@ $$  /   \$$ |\$$$$$$$\ \$$$$$$$ | \$$$$  |$$ |  $$ |\$$$$$$$\ $$ |
         log.error(f"Cannot parse .env file: {e}")
         raise
 
-    config_msg = f"""configuration
-        -- metadata --
-        device_name: {DEVICE_NAME}
-        device_manufacturer: {DEVICE_MANUFACTURER}
-
-        -- kafka producer --
-        topic: {KAFKA_PRODUCER_TOPIC}
-        source_name: {KAFKA_PRODUCER_SOURCE_NAME}
-        
-        -- sensors --
-        scrap_interval: {SCRAP_INTERVAL}
-        enable_temperature: {ENABLE_TEMPERATURE}
-        enable_humidity: {ENABLE_HUMIDITY}
-        enable_pressure: {ENABLE_PRESSURE}
-        enable_pm25: {ENABLE_PM25}
-    """
+    config_msg = "Application Configuration:\n"
+    config_msg += " app_version             %s\n" % APP_VERSION
+    config_msg += " device_name             %s\n" % DEVICE_NAME
+    config_msg += " device_manufacturer     %s\n" % DEVICE_MANUFACTURER
+    config_msg += " device_platform         %s\n" % platform.platform()
+    config_msg += " kafka_bootstrap_server  %s\n" % KAFKA_PRODUCER_BOOTSTRAP_SERVERS
+    config_msg += " kafka_topic             %s\n" % KAFKA_PRODUCER_TOPIC
+    config_msg += " kafka_source_name       %s\n" % KAFKA_PRODUCER_SOURCE_NAME
+    config_msg += " enabled_temperature     %s\n" % ENABLE_TEMPERATURE
+    config_msg += " enabled_humidity        %s\n" % ENABLE_HUMIDITY
+    config_msg += " enabled_pressure        %s\n" % ENABLE_PRESSURE
+    config_msg += " enabled_pm25:           %s\n" % ENABLE_PM25
 
     log.info(config_msg)
 
