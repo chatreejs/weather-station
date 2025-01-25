@@ -182,7 +182,7 @@ if __name__ == "__main__":
     try:
         DEVICE_NAME = os.getenv("DEVICE_NAME")
         DEVICE_MANUFACTURER = os.getenv("DEVICE_MANUFACTURER")
-        KAFKA_PRODUCER_BOOTSTRAP_SERVERS = os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS")
+        KAFKA_PRODUCER_BOOTSTRAP_SERVERS = [i for i in os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS").split(",")]
         KAFKA_PRODUCER_TOPIC = os.getenv("KAFKA_PRODUCER_TOPIC")
         KAFKA_PRODUCER_SOURCE_NAME = os.getenv("KAFKA_PRODUCER_SOURCE_NAME")
         ENABLE_TEMPERATURE = get_boolean_from_string(os.getenv("ENABLE_TEMPERATURE"))
@@ -194,15 +194,16 @@ if __name__ == "__main__":
         raise
 
     config_msg = "Application Configuration:\n"
-    config_msg += " device_name         %s\n" % DEVICE_NAME
-    config_msg += " device_manufacturer %s\n" % DEVICE_MANUFACTURER
-    config_msg += " device_platform     %s\n" % platform.platform()
-    config_msg += " topic               %s\n" % KAFKA_PRODUCER_TOPIC
-    config_msg += " source_name         %s\n" % KAFKA_PRODUCER_SOURCE_NAME
-    config_msg += " enabled_temperature %s\n" % ENABLE_TEMPERATURE
-    config_msg += " enabled_humidity    %s\n" % ENABLE_HUMIDITY
-    config_msg += " enabled_pressure    %s\n" % ENABLE_PRESSURE
-    config_msg += " enabled_pm25:       %s\n" % ENABLE_PM25
+    config_msg += " device_name             %s\n" % DEVICE_NAME
+    config_msg += " device_manufacturer     %s\n" % DEVICE_MANUFACTURER
+    config_msg += " device_platform         %s\n" % platform.platform()
+    config_msg += " kafka_bootstrap_server  %s\n" % KAFKA_PRODUCER_BOOTSTRAP_SERVERS
+    config_msg += " kafka_topic             %s\n" % KAFKA_PRODUCER_TOPIC
+    config_msg += " kafka_source_name       %s\n" % KAFKA_PRODUCER_SOURCE_NAME
+    config_msg += " enabled_temperature     %s\n" % ENABLE_TEMPERATURE
+    config_msg += " enabled_humidity        %s\n" % ENABLE_HUMIDITY
+    config_msg += " enabled_pressure        %s\n" % ENABLE_PRESSURE
+    config_msg += " enabled_pm25:           %s\n" % ENABLE_PM25
 
     logger.info(config_msg)
 
@@ -219,7 +220,7 @@ if __name__ == "__main__":
     try:
         logger.info("Connecting to Kafka")
         producer = KafkaProducer(
-            bootstrap_servers=[KAFKA_PRODUCER_BOOTSTRAP_SERVERS],
+            bootstrap_servers=KAFKA_PRODUCER_BOOTSTRAP_SERVERS,
             value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
         logger.info("Connected to Kafka")
