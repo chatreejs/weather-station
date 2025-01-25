@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import platform
 import re
 import time
@@ -168,21 +169,25 @@ def main():
 if __name__ == "__main__":
     config = {
         "handlers": {
-            "stream_handler": {
+            "console": {
                 "class": "logging.StreamHandler",
                 "formatter": "default",
             },
-            "file_handler": {
+            "rotating_file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": "logs/weather-station.log",
+                "maxBytes": 1024*1024,
+                "backupCount": 5,
+            },
+            "critical_file": {
                 "class": "logging.FileHandler",
-                "filename": "weather-station.log",
+                "filename": "logs/weather-station-error.log",
+                "level": "ERROR",
             },
         },
-        "loggers": {
-            "__main__": {
-                "level": "INFO",
-                "handlers": ["stream_handler", "file_handler"],
-                "propagate": False,
-            }
+        "root": {
+            "level": "INFO",
+            "handlers": ["console", "rotating_file", "critical_file"],
         },
     }
     Logger.configure(**config)
@@ -261,8 +266,13 @@ $$  /   \$$ |\$$$$$$$\ \$$$$$$$ | \$$$$  |$$ |  $$ |\$$$$$$$\ $$ |
     try:
         log.info("Starting main threads")
         main()
+    except KeyboardInterrupt:
+        log.info("Exiting program")
     except Exception as e:
         log.error(e)
         raise
     finally:
+        log.info("Teardown LoRa")
         lora.teardown()
+        sys.exit(0)
+
