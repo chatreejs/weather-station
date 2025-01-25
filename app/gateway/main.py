@@ -166,15 +166,19 @@ def main():
 if __name__ == "__main__":
     config = {
         "handlers": {
+            "stream_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "default",
+            },
             "file_handler": {
                 "class": "logging.FileHandler",
                 "filename": "weather-station.log",
-            }
+            },
         },
         "loggers": {
             "__main__": {
                 "level": "INFO",
-                "handlers": ["file_handler"],
+                "handlers": ["stream_handler", "file_handler"],
                 "propagate": False,
             }
         },
@@ -182,9 +186,19 @@ if __name__ == "__main__":
     Logger.configure(**config)
     log = Logger.get_logger(__name__)
 
-    APP_VERSION = os.getenv("APP_VERSION")
-    print(APP_VERSION)
-    log.info("Starting Weather Station Application v%s", APP_VERSION)
+    APP_VERSION = "0.1.0"
+    splash = '''
+$$\      $$\                      $$\     $$\\
+$$ | $\  $$ |                     $$ |    $$ |
+$$ |$$$\ $$ | $$$$$$\   $$$$$$\ $$$$$$\   $$$$$$$\   $$$$$$\   $$$$$$\\
+$$ $$ $$\$$ |$$  __$$\  \____$$\\\\_$$  _|  $$  __$$\ $$  __$$\ $$  __$$\\
+$$$$  _$$$$ |$$$$$$$$ | $$$$$$$ | $$ |    $$ |  $$ |$$$$$$$$ |$$ |  \__|
+$$$  / \$$$ |$$   ____|$$  __$$ | $$ |$$\ $$ |  $$ |$$   ____|$$ |
+$$  /   \$$ |\$$$$$$$\ \$$$$$$$ | \$$$$  |$$ |  $$ |\$$$$$$$\ $$ |
+\__/     \__| \_______| \_______|  \____/ \__|  \__| \_______|\__|
+:: Weather Gateway ::                                (v{version})
+    '''.format(version=APP_VERSION)
+    print(splash)
     log.info("Loading .env file")
     load_dotenv()
 
