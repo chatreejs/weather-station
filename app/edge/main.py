@@ -7,11 +7,13 @@ import threading
 import time
 from datetime import datetime
 
-from autopylogger import init_logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
+from log4py import Logger
 from models import SensorUpdate
 from sensors import BME280, PM1006
+
+Logger.set_level("DEBUG")
 
 APP_VERSION = "0.1.0"
 MOCK_PROBE_ID = "TH-10-0001"
@@ -22,7 +24,7 @@ exit_flag = False
 def exit_handler(sig, frame):
     global exit_flag
     exit_flag = True
-    logger.info("Send exit signal to threads")
+    log.info("Send exit signal to threads")
     sys.exit(0)
 
 
@@ -35,7 +37,7 @@ def get_boolean_from_string(value: str):
 
 
 def send_message(message: dict, header_type: str):
-    logger.info(f"Sending message: {message}")
+    log.info(f"Sending message: {message}")
     producer.send(
         topic=KAFKA_PRODUCER_TOPIC,
         key=bytes("data", "utf-8"),
@@ -46,7 +48,7 @@ def send_message(message: dict, header_type: str):
 
 
 def weather_sensor_loop():
-    logger.info("Starting weather sensor loop")
+    log.info("Starting weather sensor loop")
     bme280 = BME280()
 
     previous_temperature = None
@@ -115,7 +117,7 @@ def weather_sensor_loop():
 
 
 def particle_sensor_loop():
-    logger.info("Starting particle sensor loop")
+    log.info("Starting particle sensor loop")
     pm1006 = PM1006()
 
     previous_pm25 = None
@@ -123,7 +125,7 @@ def particle_sensor_loop():
         current_datetime = datetime.now().astimezone()
         pm1006.open_connection()
         sensor_msg, pm25 = pm1006.get_pm25()
-        logger.debug(f"sensor_msg: {sensor_msg}")
+        log.debug(f"sensor_msg: {sensor_msg}")
         if pm25 is not None and previous_pm25 != pm25 and ENABLE_PM25:
             sensor_data = SensorUpdate(
                 source=KAFKA_PRODUCER_SOURCE_NAME + "." + "pm1006",
@@ -147,19 +149,43 @@ def particle_sensor_loop():
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, exit_handler)
 
-    log_format = "%(asctime)s %(levelname)s - [%(filename)s] %(funcName)s: %(message)s"
-    logger = init_logging(
-        log_directory="logs",
-        log_name="weather-station",
-        log_format=log_format,
-        log_level="DEBUG",
-        rotation_criteria="time",
-        rotate_when="d",
-        rotate_interval=1,
-    )
+    config = {
+        "handlers": {
+            "stream_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "default",
+            },
+            "file_handler": {
+                "class": "logging.FileHandler",
+                "filename": "weather-station.log",
+            },
+        },
+        "loggers": {
+            "__main__": {
+                "level": "INFO",
+                "handlers": ["stream_handler", "file_handler"],
+                "propagate": False,
+            }
+        },
+    }
+    Logger.configure(**config)
+    log = Logger.get_logger(__name__)
 
-    logger.info("Starting Weather Station Application v%s", APP_VERSION)
-    logger.info("Loading .env file")
+    splash = """
+$$\      $$\                      $$\     $$\\
+$$ | $\  $$ |                     $$ |    $$ |
+$$ |$$$\ $$ | $$$$$$\   $$$$$$\ $$$$$$\   $$$$$$$\   $$$$$$\   $$$$$$\\
+$$ $$ $$\$$ |$$  __$$\  \____$$\\\\_$$  _|  $$  __$$\ $$  __$$\ $$  __$$\\
+$$$$  _$$$$ |$$$$$$$$ | $$$$$$$ | $$ |    $$ |  $$ |$$$$$$$$ |$$ |  \__|
+$$$  / \$$$ |$$   ____|$$  __$$ | $$ |$$\ $$ |  $$ |$$   ____|$$ |
+$$  /   \$$ |\$$$$$$$\ \$$$$$$$ | \$$$$  |$$ |  $$ |\$$$$$$$\ $$ |
+\__/     \__| \_______| \_______|  \____/ \__|  \__| \_______|\__|
+:: Weather Gateway ::                                (v{version})
+    """.format(
+        version=APP_VERSION
+    )
+    print(splash)
+    log.info("Loading .env file")
     load_dotenv()
 
     try:
@@ -174,7 +200,7 @@ if __name__ == "__main__":
         ENABLE_PRESSURE = get_boolean_from_string(os.getenv("ENABLE_PRESSURE"))
         ENABLE_PM25 = get_boolean_from_string(os.getenv("ENABLE_PM25"))
     except Exception as e:
-        logger.error(f"Cannot parse .env file: {e}")
+        log.error(f"Cannot parse .env file: {e}")
         raise
 
     config_msg = f"""configuration
@@ -194,18 +220,18 @@ if __name__ == "__main__":
         enable_pm25: {ENABLE_PM25}
     """
 
-    logger.info(config_msg)
+    log.info(config_msg)
 
     try:
-        logger.info("Connecting to kafka")
+        log.info("Connecting to kafka")
         producer = KafkaProducer(
             bootstrap_servers=[KAFKA_PRODUCER_BOOTSTRAP_SERVERS],
             value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
-        logger.info("Connected to kafka")
+        log.info("Connected to kafka")
 
     except Exception as e:
-        logger.error(f"Cannot connect to Kafka: {e}")
+        log.error(f"Cannot connect to Kafka: {e}")
         raise
 
     try:
@@ -213,12 +239,12 @@ if __name__ == "__main__":
         thread_2 = threading.Thread(target=particle_sensor_loop)
 
         # Start the threads
-        logger.info("Starting sensor threads")
+        log.info("Starting sensor threads")
         thread_1.start()
         thread_2.start()
         # Keep the main thread alive to handle Ctrl+C
         while True:
             time.sleep(1)
     except Exception as e:
-        logger.error(e)
+        log.error(e)
         raise

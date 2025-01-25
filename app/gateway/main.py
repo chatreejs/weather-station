@@ -14,6 +14,8 @@ from sensor_type import SensorType
 
 Logger.set_level("DEBUG")
 
+APP_VERSION = "0.1.0"
+
 
 def get_boolean_from_string(value: str):
     value_capitalize = value.lower().capitalize()
@@ -186,8 +188,7 @@ if __name__ == "__main__":
     Logger.configure(**config)
     log = Logger.get_logger(__name__)
 
-    APP_VERSION = "0.1.0"
-    splash = '''
+    splash = """
 $$\      $$\                      $$\     $$\\
 $$ | $\  $$ |                     $$ |    $$ |
 $$ |$$$\ $$ | $$$$$$\   $$$$$$\ $$$$$$\   $$$$$$$\   $$$$$$\   $$$$$$\\
@@ -197,7 +198,9 @@ $$$  / \$$$ |$$   ____|$$  __$$ | $$ |$$\ $$ |  $$ |$$   ____|$$ |
 $$  /   \$$ |\$$$$$$$\ \$$$$$$$ | \$$$$  |$$ |  $$ |\$$$$$$$\ $$ |
 \__/     \__| \_______| \_______|  \____/ \__|  \__| \_______|\__|
 :: Weather Gateway ::                                (v{version})
-    '''.format(version=APP_VERSION)
+    """.format(
+        version=APP_VERSION
+    )
     print(splash)
     log.info("Loading .env file")
     load_dotenv()
