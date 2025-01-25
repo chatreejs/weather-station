@@ -1,3 +1,4 @@
+from log4py import Logger
 from SX127x.board_config import BOARD
 from SX127x.LoRa import *
 
@@ -5,8 +6,10 @@ BOARD.setup()
 BOARD.reset()
 
 
+@Logger.class_logger()
 class LoRaReceiver(LoRa):
     def __init__(self, verbose=False):
+        self.logger.info("Initializing LoRa Receiver")
         super(LoRaReceiver, self).__init__(verbose)
         self.set_mode(MODE.SLEEP)
         self.set_freq(433)

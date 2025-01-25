@@ -5,14 +5,14 @@ import re
 import time
 from datetime import datetime
 
-from autopylogger import init_logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
+from log4py import Logger
 from lora import LoRaReceiver
 from models import Heartbeat, SensorUpdate
 from sensor_type import SensorType
 
-APP_VERSION = "0.1.0"
+Logger.set_level("DEBUG")
 
 
 def get_boolean_from_string(value: str):
@@ -24,7 +24,7 @@ def get_boolean_from_string(value: str):
 
 
 def send_message(message: dict, header_type: str):
-    logger.debug(f"Sending message: {message}")
+    log.debug(f"Sending message: {message}")
     producer.send(
         topic=KAFKA_PRODUCER_TOPIC,
         key=bytes("data", "utf-8"),
@@ -51,7 +51,7 @@ def validate_lora_message(message: str):
 
 
 def main():
-    logger.info("Starting weather sensor loop")
+    log.info("Starting weather sensor loop")
     lora.start()
 
     previous_temperature = None
@@ -61,12 +61,12 @@ def main():
 
     while True:
         if lora.received_message:
-            logger.info(
+            log.info(
                 f"Received message from probe: '{lora.received_message}', RSSI: {lora.get_rssi_value()} dBm"
             )
             is_valid, error = validate_lora_message(lora.received_message)
             if is_valid is False:
-                logger.error("Invalid message format: %s", error)
+                log.error("Invalid message format: %s", error)
                 lora.received_message = None
                 continue
             message = lora.received_message.split("|")
@@ -164,25 +164,36 @@ def main():
 
 
 if __name__ == "__main__":
-    log_format = "%(asctime)s %(levelname)s  [%(filename)s] %(funcName)s: %(message)s"
-    logger = init_logging(
-        log_directory="logs",
-        log_name="weather-station",
-        log_format=log_format,
-        log_level="DEBUG",
-        rotation_criteria="time",
-        rotate_when="d",
-        rotate_interval=1,
-    )
+    config = {
+        "handlers": {
+            "file_handler": {
+                "class": "logging.FileHandler",
+                "filename": "weather-station.log",
+            }
+        },
+        "loggers": {
+            "__main__": {
+                "level": "INFO",
+                "handlers": ["file_handler"],
+                "propagate": False,
+            }
+        },
+    }
+    Logger.configure(**config)
+    log = Logger.get_logger(__name__)
 
-    logger.info("Starting Weather Station Application v%s", APP_VERSION)
-    logger.info("Loading .env file")
+    APP_VERSION = os.getenv("APP_VERSION")
+    print(APP_VERSION)
+    log.info("Starting Weather Station Application v%s", APP_VERSION)
+    log.info("Loading .env file")
     load_dotenv()
 
     try:
         DEVICE_NAME = os.getenv("DEVICE_NAME")
         DEVICE_MANUFACTURER = os.getenv("DEVICE_MANUFACTURER")
-        KAFKA_PRODUCER_BOOTSTRAP_SERVERS = [i for i in os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS").split(",")]
+        KAFKA_PRODUCER_BOOTSTRAP_SERVERS = [
+            i for i in os.getenv("KAFKA_PRODUCER_BOOTSTRAP_SERVERS").split(",")
+        ]
         KAFKA_PRODUCER_TOPIC = os.getenv("KAFKA_PRODUCER_TOPIC")
         KAFKA_PRODUCER_SOURCE_NAME = os.getenv("KAFKA_PRODUCER_SOURCE_NAME")
         ENABLE_TEMPERATURE = get_boolean_from_string(os.getenv("ENABLE_TEMPERATURE"))
@@ -190,10 +201,11 @@ if __name__ == "__main__":
         ENABLE_PRESSURE = get_boolean_from_string(os.getenv("ENABLE_PRESSURE"))
         ENABLE_PM25 = get_boolean_from_string(os.getenv("ENABLE_PM25"))
     except Exception as e:
-        logger.error(f"Cannot parse .env file: {e}")
+        log.error(f"Cannot parse .env file: {e}")
         raise
 
     config_msg = "Application Configuration:\n"
+    config_msg += " app_version             %s\n" % APP_VERSION
     config_msg += " device_name             %s\n" % DEVICE_NAME
     config_msg += " device_manufacturer     %s\n" % DEVICE_MANUFACTURER
     config_msg += " device_platform         %s\n" % platform.platform()
@@ -205,35 +217,35 @@ if __name__ == "__main__":
     config_msg += " enabled_pressure        %s\n" % ENABLE_PRESSURE
     config_msg += " enabled_pm25:           %s\n" % ENABLE_PM25
 
-    logger.info(config_msg)
+    log.info(config_msg)
 
     try:
-        logger.info("Initializing LoRa Gateway")
+        log.info("Initializing LoRa Gateway")
         lora = LoRaReceiver(verbose=False)
         if lora.get_mode() != 0x80 and lora.get_mode() != 0x81:
             raise Exception("LoRa is not in SLEEP or STDBY mode. Check wiring")
-        logger.info(lora)
+        log.info(lora)
     except Exception as e:
-        logger.error(f"Cannot initialize LoRa: {e}")
+        log.error(f"Cannot initialize LoRa: {e}")
         raise
 
     try:
-        logger.info("Connecting to Kafka")
+        log.info("Connecting to Kafka")
         producer = KafkaProducer(
             bootstrap_servers=KAFKA_PRODUCER_BOOTSTRAP_SERVERS,
             value_serializer=lambda x: json.dumps(x).encode("utf-8"),
         )
-        logger.info("Connected to Kafka")
+        log.info("Connected to Kafka")
 
     except Exception as e:
-        logger.error(f"Cannot connect to Kafka: {e}")
+        log.error(f"Cannot connect to Kafka: {e}")
         raise
 
     try:
-        logger.info("Starting main threads")
+        log.info("Starting main threads")
         main()
     except Exception as e:
-        logger.error(e)
+        log.error(e)
         raise
     finally:
         lora.teardown()
